@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BRAND_NAME } from "@/lib/defaults";
 
 export default function Home() {
   const [serverInfo, setServerInfo] = useState<any>(null);
@@ -24,7 +25,7 @@ export default function Home() {
   }, []);
 
   // Use sidebarTitle as webName if available, else fallback
-  const appName = serverInfo?.webName || process.env.NEXT_PUBLIC_APP_NAME || "PW Quantum";
+  const appName = serverInfo?.webName || BRAND_NAME;
   const fullText = `Welcome to ${appName}`;
   const phrases = [
     { text: `Welcome to ${appName}`, color: "!text-cyan-300" },

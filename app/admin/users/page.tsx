@@ -98,9 +98,58 @@ export default function UsersPage() {
   const [tagDialogUser, setTagDialogUser] = useState<User | null>(null);
   const [selectedTag, setSelectedTag] = useState<string>("user");
   const [savingTag, setSavingTag] = useState(false);
+  const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
+  const [tokenDialogUser, setTokenDialogUser] = useState<User | null>(null);
+  const [userTokens, setUserTokens] = useState<{
+    accessToken: string | null;
+    refreshToken: string | null;
+    randomId: string | null;
+    updatedAt?: string | null;
+  } | null>(null);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+  const [showFullTokens, setShowFullTokens] = useState(false);
   const router = useRouter();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const openTokenDialog = async (user: User) => {
+    setTokenDialogUser(user);
+    setUserTokens(null);
+    setShowFullTokens(false);
+    setIsTokenDialogOpen(true);
+    setLoadingTokens(true);
+    try {
+      const res = await fetch(`/api/admin/user-tokens?userId=${user._id}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to load tokens");
+      setUserTokens({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        randomId: data.randomId,
+        updatedAt: data.updatedAt,
+      });
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to load user tokens");
+      setIsTokenDialogOpen(false);
+    } finally {
+      setLoadingTokens(false);
+    }
+  };
+
+  const copyValue = async (label: string, value?: string | null) => {
+    if (!value) {
+      toast.warning(`${label} is empty`);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
 
   useEffect(() => {
     if (!debouncedSearchTerm.trim()) return; // ⛔ Don't run if search is empty
@@ -371,6 +420,74 @@ export default function UsersPage() {
   return (
     <AdminLayout activePage="users">
       <div className="p-3 lg:p-8">
+        <Dialog open={isTokenDialogOpen} onOpenChange={setIsTokenDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>User Tokens</DialogTitle>
+              <DialogDescription>
+                {tokenDialogUser
+                  ? `${tokenDialogUser.UserName} • ${tokenDialogUser.phoneNumber}`
+                  : ""}
+              </DialogDescription>
+            </DialogHeader>
+
+            {loadingTokens ? (
+              <p className="text-sm text-gray-600">Loading tokens...</p>
+            ) : (
+              <div className="space-y-4">
+                {[
+                  { label: "Access Token", value: userTokens?.accessToken },
+                  { label: "Refresh Token", value: userTokens?.refreshToken },
+                  { label: "Random ID", value: userTokens?.randomId },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <Label className="text-xs font-medium text-gray-700">
+                      {item.label}
+                    </Label>
+                    <div className="mt-1 flex items-start gap-2">
+                      <p className="flex-1 font-mono text-xs break-all bg-gray-50 border rounded-md p-2">
+                        {item.value
+                          ? showFullTokens
+                            ? item.value
+                            : `${item.value.slice(0, 12)}...${item.value.slice(-8)}`
+                          : "Not available"}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyValue(item.label, item.value)}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    {userTokens?.updatedAt
+                      ? `Last updated: ${formatDate(String(userTokens.updatedAt))}`
+                      : ""}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowFullTokens((v) => !v)}
+                  >
+                    {showFullTokens ? "Hide full tokens" : "Show full tokens"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsTokenDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -750,6 +867,18 @@ export default function UsersPage() {
                                 className="text-xs px-2 py-1 lg:px-3 lg:py-2 w-full"
                               >
                                 Change User Tag
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTokenDialog(user);
+                                }}
+                                className="text-xs px-2 py-1 lg:px-3 lg:py-2 w-full"
+                              >
+                                <Shield className="w-3 h-3 mr-1" />
+                                View Tokens
                               </Button>
                             </div>
                           </div>

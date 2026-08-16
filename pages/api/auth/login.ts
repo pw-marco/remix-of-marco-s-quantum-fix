@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import ServerConfig from "@/models/ServerConfig";
+import { getOrCreateServerConfig } from "@/lib/ensureServerConfig";
 
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
@@ -48,7 +48,7 @@ export default async function handler(
   try {
     await dbConnect();
     // ✅ CHeck the server, is setup or not!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    const config = await ServerConfig.findById(1);
+    const config = await getOrCreateServerConfig();
 
     if (!config) {
       return res

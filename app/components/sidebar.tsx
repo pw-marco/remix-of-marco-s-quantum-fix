@@ -1,4 +1,5 @@
 "use client";
+import { BRAND_NAME, BRAND_LOGO_URL } from "@/lib/defaults";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -60,14 +61,14 @@ export function Sidebar({
         <div className="p-4 border-b sticky top-0 bg-background z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full dark:bg-foreground overflow-hidden">
             <Image
-              src={sidebarLogoUrl || "/assets/img/logo.png"}
-              alt={sidebarTitle || "Stduy Meta"}
+              src={sidebarLogoUrl || BRAND_LOGO_URL}
+              alt={sidebarTitle || BRAND_NAME}
               width={40}
               height={40}
               priority={true}
             />
           </div>
-          <span className="font-semibold">{sidebarTitle}</span>
+          <span className="font-semibold">{sidebarTitle || BRAND_NAME}</span>
           <GraduationCap />
         </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { TELEGRAM_USERNAME } from "@/lib/defaults";
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -83,7 +84,7 @@ export default function Home() {
     }
   }, [serverInfo]);
 
-  const TgChannel = serverInfo?.tg_channel || process.env.NEXT_PUBLIC_TG || "stromstudy";
+  const TgChannel = serverInfo?.tg_channel || TELEGRAM_USERNAME;
 
   const getChannelLink = (channel: string) => {
     if (!channel) return "";

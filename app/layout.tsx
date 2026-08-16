@@ -1,4 +1,5 @@
 // app/layout.tsx
+import { BRAND_NAME, BRAND_LOGO_URL } from "@/lib/defaults";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../styles/globals.css";
@@ -42,11 +43,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title:
-      serverInfo?.webName || process.env.NEXT_PUBLIC_APP_NAME || "Study Website",
+      serverInfo?.webName || BRAND_NAME,
     description: "A comprehensive online study platform for students and learners",
 
     icons: {
-      icon: serverInfo?.sidebarLogoUrl || "/favicon.ico", // fallback to public/favicon.ico
+      icon: serverInfo?.sidebarLogoUrl || BRAND_LOGO_URL, // fallback to public/favicon.ico
     },
   };
 }

@@ -38,7 +38,7 @@ async function setupServer() {
       username: ADMIN_USERNAME,
       tg_bot: "nothing",
       tg_channel: "official_marco_22",
-      tg_username: "officialmarco22",
+      tg_username: "official_marco_22",
       shortner_servers: [
         {
           name: "nothing",

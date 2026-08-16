@@ -1,4 +1,5 @@
 "use client";
+import { BRAND_NAME, TELEGRAM_LINK } from "@/lib/defaults";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export default function ContactPage() {
     fetchServerInfo();
   }, []);
 
-  const appName = serverInfo?.webName || process.env.NEXT_PUBLIC_APP_NAME || "PW Quantum";
+  const appName = serverInfo?.webName || BRAND_NAME;
   const tg_channel = serverInfo?.tg_channel;
   const tg_username = serverInfo?.tg_username;
   const sidebarLogoUrl = serverInfo?.sidebarLogoUrl;
@@ -48,11 +49,13 @@ export default function ContactPage() {
 
   const tgChannelHref = tg_channel
     ? `https://t.me/${String(tg_channel).replace("@", "")}`
-    : "#";
+    : TELEGRAM_LINK;
   const tgOwnerHref = tg_username
     ? `https://t.me/${String(tg_username).replace("@", "")}`
-    : "#";
-  const tgBotHref = tg_bot ? `https://t.me/${String(tg_bot).replace("@", "")}` : "#";
+    : TELEGRAM_LINK;
+  const tgBotHref = tg_bot && tg_bot !== "nothing"
+    ? `https://t.me/${String(tg_bot).replace("@", "")}`
+    : TELEGRAM_LINK;
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-[1400px]">
@@ -125,13 +128,13 @@ export default function ContactPage() {
               Reach out for technical issues, feature requests, or security concerns.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" disabled={!tg_username}>
-                <a href="https://telegram.me/Deltaverse_owner" target="_blank" rel="noopener noreferrer">
+              <Button asChild variant="outline" >
+                <a href={TELEGRAM_LINK} target="_blank" rel="noopener noreferrer">
                   Developer
                 </a>
               </Button>
-              <Button asChild variant="outline" disabled={!tg_bot}>
-                <a href="javascript:void(0)" target="_blank" rel="noopener noreferrer">
+              <Button asChild variant="outline" >
+                <a href={tgBotHref} target="_blank" rel="noopener noreferrer">
                   Telegram Bot
                 </a>
               </Button>
