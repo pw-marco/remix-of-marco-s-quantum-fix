@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { PiTelegramLogoBold } from "react-icons/pi";
 import { RiExternalLinkLine } from "react-icons/ri";
+import { Button } from "@/components/ui/button";
+import telegramBanner from "@/src/assets/telegram-community-banner.png.asset.json";
 
 interface Button {
   Name: string;
@@ -54,18 +56,15 @@ const PromotionPopup: React.FC<Props> = ({ promotion }) => {
       >
         {/* Popup Card - BRIGHT WHITE SOLID */}
         <div
-          className="relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up"
-          style={{
-            background: `
-              linear-gradient(135deg, #ffffff 0%, #f0f7ff 50%, #ffffff 100%)
-            `,
-          }}
+          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-2xl animate-slide-up"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setVisible(false)}
-            className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all text-slate-600 hover:rotate-90 duration-300"
+            className="absolute right-3 top-3 z-20 rounded-full bg-background/80 text-foreground backdrop-blur hover:bg-accent"
             aria-label="Close"
           >
             <svg
@@ -78,61 +77,51 @@ const PromotionPopup: React.FC<Props> = ({ promotion }) => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
 
           {/* Content */}
-          <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center">
-            {/* Animated Telegram Icon */}
-            <div className="relative mb-6 animate-float">
-              {/* Glow rings */}
-              <div className="absolute inset-0 rounded-full bg-blue-400/40 blur-xl scale-125 animate-pulse-slow" />
-              <div className="absolute inset-0 rounded-full bg-blue-500/30 blur-2xl scale-150 animate-pulse-slow" />
-
-              {/* Icon Circle */}
-              <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#3aa9f0] to-[#1e88e5] flex items-center justify-center shadow-lg shadow-blue-500/40">
-                <PiTelegramLogoBold className="w-10 h-10 text-white -ml-1" />
-              </div>
+          <div className="flex flex-col items-center px-5 pb-5 pt-14 text-center sm:px-6">
+            <div className="mb-5 w-full overflow-hidden rounded-lg border border-border bg-muted">
+              <img
+                src={promotion.imageUrl || telegramBanner.url}
+                alt="Telegram community banner"
+                className="aspect-[16/9] w-full object-cover grayscale dark:brightness-75"
+              />
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-3">
-              {promotion.title || "Join Telegram Community!"}{" "}
-              <span className="inline-block animate-rocket">🚀</span>
+            <h2 className="mb-3 text-2xl font-extrabold text-foreground">
+              {promotion.title || "Join Telegram Community!"}
             </h2>
 
             {/* Message */}
             {promotion.message && (
-              <p className="text-slate-500 text-[15px] leading-relaxed max-w-[300px] mb-7">
+              <p className="mb-6 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
                 {promotion.message}
               </p>
             )}
 
             {/* Join Button */}
             {finalLink && (
-              <a
-                href={finalLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#3aa9f0] to-[#1e88e5] hover:from-[#2196f3] hover:to-[#1976d2] text-white font-bold text-[15px] py-4 rounded-2xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
-              >
-                {/* Shine effect */}
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-                <PiTelegramLogoBold className="w-5 h-5 relative z-10" />
-                <span className="relative z-10">
+              <Button asChild size="lg" className="w-full font-bold">
+                <a href={finalLink} target="_blank" rel="noopener noreferrer">
+                  <PiTelegramLogoBold className="h-5 w-5" />
+                  <span>
                   {promotion.button?.Name || "Join Community Now"}
-                </span>
-                <RiExternalLinkLine className="w-4 h-4 relative z-10 opacity-90" />
-              </a>
+                  </span>
+                  <RiExternalLinkLine className="h-4 w-4 opacity-80" />
+                </a>
+              </Button>
             )}
 
             {/* Maybe Later */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setVisible(false)}
-              className="mt-4 text-slate-500 hover:text-slate-700 font-semibold text-sm py-2 px-4 transition-colors"
+              className="mt-3 text-muted-foreground"
             >
               Maybe Later
-            </button>
+            </Button>
           </div>
         </div>
       </div>
