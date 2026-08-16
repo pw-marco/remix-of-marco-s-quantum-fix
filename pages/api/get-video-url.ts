@@ -270,10 +270,10 @@ export default async function handler(
             continue;
           }
 
+          const videoDetailsUrl = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
           try {
-            const url = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
             const headers = getVideoHeaders(token.accessToken, token.randomId);
-            const response = await axios.get(url, { headers });
+            const response = await axios.get(videoDetailsUrl, { headers });
 
             return res.status(200).json(response.data);
           } catch (error: any) {
@@ -286,7 +286,7 @@ export default async function handler(
                       renewedToken,
                       token.randomId || crypto.randomUUID()
                     );
-                    const renewedResponse = await axios.get(url, {
+                    const renewedResponse = await axios.get(videoDetailsUrl, {
                       headers: renewedHeaders,
                     });
                     return res.status(200).json(renewedResponse.data);
