@@ -1,8 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import axios from "axios";
-import { getHeaders } from "@/utils/auth";
-import { authenticateUser, clearAuthCookies } from "@/utils/authenticateUser";
-import { resolvePenpencilToken } from "@/utils/penpencilToken";
+import { authenticateUser } from "@/utils/authenticateUser";
+import { penpencilRequest } from "@/utils/penpencilApi";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,7 +9,6 @@ export default async function handler(
   try {
     // Verify user token before proceeding
     const user = await authenticateUser(req, res);
-    let ActualToken = await resolvePenpencilToken(user); // ✅ global token for guests / auth OFF
     const PW_API = process.env.PW_API;
     const { idsParam } = req.body;
 
@@ -33,20 +30,13 @@ const url = `${PW_API}/v1/users/get-user-details-list?userIds=${userIds}`;
 
     // https://api.penpencil.co/v1/users/get-user-details-list?userIds=6842cc85450edb732a9dace0,660d1fd2ac956e001897762a
 
-    const response = await axios.get(url, {
-      headers: getHeaders(ActualToken || ""),
-    });
+    const response = await penpencilRequest({ method: "GET", url }, user);
 
     return res.status(200).json({
       data: response.data?.data || [],
     });
   } catch (error: any) {
     const status = error.response?.status || 500;
-
-    // 🚨 Handle 401 from downstream API
-    if (status === 401) {
-      clearAuthCookies(res);
-    }
 
     return res.status(status).json({
       message: error.response?.data?.message || "Error fetching Users",

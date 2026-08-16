@@ -4,7 +4,10 @@ import axios from "axios";
 import Batch from "@/models/Batch";
 import crypto from "crypto";
 import { getVideoHeaders } from "@/utils/auth";
-import { resolvePenpencilToken } from "@/utils/penpencilToken";
+import {
+  forceRenewGlobalPenpencilToken,
+  resolvePenpencilToken,
+} from "@/utils/penpencilToken";
 import dbConnect from "@/lib/mongodb";
 import { authenticateUser } from "@/utils/authenticateUser";
 import User from "@/models/User";
@@ -267,16 +270,34 @@ export default async function handler(
             continue;
           }
 
+          const videoDetailsUrl = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
           try {
-            const url = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=DASH&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
             const headers = getVideoHeaders(token.accessToken, token.randomId);
-            const response = await axios.get(url, { headers });
+            const response = await axios.get(videoDetailsUrl, { headers });
 
             return res.status(200).json(response.data);
           } catch (error: any) {
             if (error.response?.status === 401) {
               if (!token.ownerId) {
-                console.warn("Global PenPencil token rejected (401). Update it in Admin -> Settings.");
+                const renewedToken = await forceRenewGlobalPenpencilToken();
+                if (renewedToken && renewedToken !== token.accessToken) {
+                  try {
+                    const renewedHeaders = getVideoHeaders(
+                      renewedToken,
+                      token.randomId || crypto.randomUUID()
+                    );
+                    const renewedResponse = await axios.get(videoDetailsUrl, {
+                      headers: renewedHeaders,
+                    });
+                    return res.status(200).json(renewedResponse.data);
+                  } catch (renewedError: any) {
+                    console.warn(
+                      "Renewed global PenPencil token was rejected:",
+                      renewedError.response?.status || renewedError.message
+                    );
+                  }
+                }
+                console.warn("Global PenPencil token rejected and automatic renewal failed.");
                 continue;
               }
               console.warn(

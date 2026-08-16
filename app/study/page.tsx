@@ -95,7 +95,7 @@ export default function Home() {
   const promotion = {
     title: "Join Telegram Community!",
     message: "Get instant updates, daily batch schedules, study material & exclusive announcements directly on Telegram!",
-    imageUrl: "https://i.ibb.co/pvYWXtH1/delta-dv.jpg",
+    imageUrl: "",
     button: { 
       Name: "Join Community Now", 
       Link: getChannelLink(TgChannel)
