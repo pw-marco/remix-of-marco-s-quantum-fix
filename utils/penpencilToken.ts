@@ -70,7 +70,7 @@ async function saveGlobalToken(pair: TokenPair): Promise<TokenPair> {
   return pair;
 }
 
-async function fetchSourceToken(): Promise<TokenPair | null> {
+async function fetchSourceTokenOnce(): Promise<TokenPair | null> {
   const response = await fetch(TOKEN_SOURCE_URL, {
     headers: { accept: "application/json" },
     cache: "no-store",
@@ -84,6 +84,19 @@ async function fetchSourceToken(): Promise<TokenPair | null> {
   const randomId = String(source?.randomId ?? source?.random_id ?? "").trim();
   if (!isPenpencilTokenUsable(token)) return null;
   return { token, refresh, randomId: randomId || undefined };
+}
+
+async function fetchSourceToken(): Promise<TokenPair | null> {
+  // The upstream endpoint returns a random token per call — retry until we get a usable one.
+  for (let i = 0; i < 8; i++) {
+    try {
+      const pair = await fetchSourceTokenOnce();
+      if (pair && isPenpencilTokenUsable(pair.token)) return pair;
+    } catch {
+      /* keep trying */
+    }
+  }
+  return null;
 }
 
 async function refreshToken(refresh: string): Promise<TokenPair | null> {
