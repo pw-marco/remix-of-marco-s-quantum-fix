@@ -1,4 +1,5 @@
 "use client";
+import { TELEGRAM_LINK } from "@/lib/defaults";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -327,10 +328,7 @@ export default function Login() {
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-blue-300">Bot Username:</span>
                   <a
-                    href={`https://telegram.me/${botUsername?.replace(
-                      "@",
-                      ""
-                    )}`}
+                    href={botUsername && botUsername !== "nothing" ? `https://t.me/${botUsername.replace("@", "")}` : TELEGRAM_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-mono text-blue-100 bg-blue-900/50 px-2 py-1 rounded text-xs hover:bg-blue-800/70 transition-colors"
