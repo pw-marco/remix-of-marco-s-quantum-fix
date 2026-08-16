@@ -51,7 +51,7 @@ const PromotionPopup: React.FC<Props> = ({ promotion }) => {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4 backdrop-blur-sm animate-fade-in"
         onClick={() => setVisible(false)}
       >
         {/* Popup Card - BRIGHT WHITE SOLID */}
