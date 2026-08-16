@@ -25,6 +25,34 @@ declare global {
 // Initialize cache or fallback
 let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
+/** Default database name used when the URI does not contain one. */
+export const DEFAULT_DB_NAME = "pw-marco";
+
+/**
+ * A connection string like
+ *   mongodb+srv://user:pass@cluster0.mongodb.net/?appName=Cluster0
+ * has NO database name, so the driver silently uses `test` and every query
+ * returns nothing. This reads the db name from the URI when present and
+ * otherwise falls back to MONGODB_DB / "pw-marco".
+ */
+export function getDbNameFromUri(uri: string): string | null {
+  try {
+    // path part between the host and the query string
+    const withoutScheme = uri.replace(/^mongodb(\+srv)?:\/\//, "");
+    const afterHost = withoutScheme.slice(withoutScheme.indexOf("/") + 1);
+    if (!withoutScheme.includes("/")) return null;
+    const dbPart = afterHost.split("?")[0];
+    return dbPart ? decodeURIComponent(dbPart) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveDbName(uri?: string): string {
+  const fromUri = uri ? getDbNameFromUri(uri) : null;
+  return fromUri || process.env.MONGODB_DB || DEFAULT_DB_NAME;
+}
+
 async function dbConnect(): Promise<typeof mongoose> {
   const mongodbUri = process.env.MONGODB_URI;
   if (!mongodbUri) {
@@ -36,7 +64,9 @@ async function dbConnect(): Promise<typeof mongoose> {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(mongodbUri);
+    cached.promise = mongoose.connect(mongodbUri, {
+      dbName: resolveDbName(mongodbUri),
+    });
   }
 
   cached.conn = await cached.promise;
