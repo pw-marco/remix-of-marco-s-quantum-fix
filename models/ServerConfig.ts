@@ -9,6 +9,16 @@ export interface IShortnerServer {
   api_key: string;
 }
 
+export interface IPlayerConfig {
+  primaryApi: string;
+  marcoApi: string;
+  pythonApi: string;
+  iframeBaseUrl: string;
+  useIframe: boolean;
+  providerOrder: string[];
+  extraHeaders?: Record<string, string>;
+}
+
 export interface IServerConfig extends mongoose.Document<number> {
   _id: number;
   webName: string;
@@ -29,6 +39,12 @@ export interface IServerConfig extends mongoose.Document<number> {
   penpencilToken: string;
   penpencilRefreshToken: string;
   penpencilTokenUpdatedAt?: Date | null;
+  /** Bumped whenever every existing session must be invalidated (ms epoch). */
+  sessionEpoch: number;
+  /** Live-editable player / stream backend configuration. */
+  playerConfig: IPlayerConfig;
+  /** Origins (hosts) that are not allowed to reach the site. */
+  blockedOrigins: string[];
   updatedAt: Date;
 }
 
@@ -65,6 +81,15 @@ const serverConfigSchema = new mongoose.Schema<IServerConfig>(
     penpencilToken: { type: String, required: false, default: "" },
     penpencilRefreshToken: { type: String, required: false, default: "" },
     penpencilTokenUpdatedAt: { type: Date, required: false, default: null },
+
+    // ---- Session revocation ----
+    sessionEpoch: { type: Number, required: false, default: 0 },
+
+    // ---- Live-editable player backends ----
+    playerConfig: { type: mongoose.Schema.Types.Mixed, required: false, default: {} },
+
+    // ---- Origin firewall ----
+    blockedOrigins: { type: [String], required: false, default: [] },
   },
   {
     timestamps: { createdAt: false, updatedAt: true },
