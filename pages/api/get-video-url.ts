@@ -276,40 +276,31 @@ export default async function handler(
       });
     }
 
-    // ✅ First try: Python Server
-    try {
-      const videoData = await fetchFromPythonServer(
-        batchId as string,
-        childId as string,
-        subjectId as string
-      );
+    // ✅ Try providers in order: Primary (Cloudflare) → Marco worker → Python
+    const providers: Array<{ name: string; run: () => Promise<any> }> = [
+      {
+        name: "PrimaryCloudflare",
+        run: () => fetchFromPrimary(batchId as string, childId as string),
+      },
+      {
+        name: "MarcoWorker",
+        run: () => fetchFromMarco(batchId as string, childId as string),
+      },
+      {
+        name: "PythonServer",
+        run: () =>
+          fetchFromPythonServer(
+            batchId as string,
+            childId as string,
+            subjectId as string
+          ),
+      },
+    ];
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          url: videoData.url,
-          signedUrl: videoData.signedUrl,
-          clearKeys: videoData.clearKeys,
-          topic: videoData.topic,
-          m3u8_url: videoData.m3u8_url,
-          hls_url: videoData.hls_url,
-          is_live: videoData.is_live,
-          video_container: videoData.video_container,
-          drm_protected: videoData.drm_protected,
-          kid: videoData.kid,
-          key: videoData.key,
-          dataFrom: videoData.dataFrom
-        }
-      });
-    } catch (pythonError) {
-      console.warn("Python server failed, trying Marco...", pythonError);
-      
-      // ✅ Fallback: Marco API
+    let lastError: unknown = null;
+    for (const provider of providers) {
       try {
-        const videoData = await fetchFromMarco(
-          batchId as string,
-          childId as string
-        );
+        const videoData = await provider.run();
 
         return res.status(200).json({
           success: true,
@@ -325,14 +316,22 @@ export default async function handler(
             drm_protected: videoData.drm_protected,
             kid: videoData.kid,
             key: videoData.key,
-            dataFrom: videoData.dataFrom
-          }
+            dataFrom: videoData.dataFrom,
+          },
         });
-      } catch (marcoError) {
-        console.error("Both Python and Marco failed:", marcoError);
-        
+      } catch (err) {
+        lastError = err;
+        console.warn(`${provider.name} failed:`, err);
+      }
+    }
+
+    {
+      {
+        console.error("All stream providers failed:", lastError);
+
         // ✅ Final fallback: Old logic
         const tokensToTry = [...batch.enrolledTokens];
+
 
         // ✅ Guest / auth-OFF: put the global admin token first so guests can
         // always play videos even if the batch has no enrolled user tokens.
