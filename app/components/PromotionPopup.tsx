@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { PiTelegramLogoBold } from "react-icons/pi";
 import { RiExternalLinkLine } from "react-icons/ri";
 import { Button } from "@/components/ui/button";
-import telegramBanner from "@/src/assets/telegram-community-banner.png.asset.json";
+const TELEGRAM_BANNER_URL =
+  "https://i.ibb.co/5WdxpvKr/file-0000000019a082119af8e86e93ee21ca.png";
 
 interface Button {
   Name: string;
@@ -83,7 +84,7 @@ const PromotionPopup: React.FC<Props> = ({ promotion }) => {
           <div className="flex flex-col items-center px-5 pb-5 pt-14 text-center sm:px-6">
             <div className="mb-5 w-full overflow-hidden rounded-lg border border-border bg-muted">
               <img
-                src={promotion.imageUrl || telegramBanner.url}
+                src={promotion.imageUrl || TELEGRAM_BANNER_URL}
                 alt="Telegram community banner"
                 className="aspect-[16/9] w-full object-cover grayscale dark:brightness-75"
               />
