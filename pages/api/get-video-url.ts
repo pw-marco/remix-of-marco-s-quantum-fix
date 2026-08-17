@@ -43,8 +43,88 @@ function cfMpdToM3u8(mpdUrl: string): string {
   return mpdUrl.replace(".mpd", ".m3u8");
 }
 
-// ✅ New: Fetch from Python Server
+// ✅ Primary: Cloudflare tunnel stream API
+const PRIMARY_API = "https://costumes-direct-dozen-expressed.trycloudflare.com";
+
+function pickStreamUrl(obj: any): string {
+  if (!obj || typeof obj !== "object") return "";
+  const candidates = [
+    obj.m3u8_url,
+    obj.hls_url,
+    obj.stream_url,
+    obj.streamUrl,
+    obj.playback_url,
+    obj.playbackUrl,
+    obj.manifest_url,
+    obj.manifestUrl,
+    obj.url,
+    obj.directUrl,
+    obj.video_url,
+    obj.videoUrl,
+    obj.link,
+  ];
+  const found = candidates.find((c) => typeof c === "string" && /^https?:\/\//i.test(c));
+  return found || "";
+}
+
+async function fetchFromPrimary(batchId: string, childId: string) {
+  const url = `${PRIMARY_API}/get-video?batch_id=${encodeURIComponent(
+    batchId
+  )}&child_id=${encodeURIComponent(childId)}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(25000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Primary API HTTP ${res.status}`);
+  }
+
+  const json = await res.json();
+
+  if (json?.success === false) {
+    throw new Error(json?.message || json?.error || "Primary API failed");
+  }
+
+  const d = (json && typeof json.data === "object" && json.data) || json || {};
+  const raw = pickStreamUrl(d) || pickStreamUrl(json);
+
+  if (!raw) {
+    throw new Error("No stream url in primary response");
+  }
+
+  const clearKeys = d.clearKeys || json.clearKeys || {};
+  const kid = d.kid || Object.keys(clearKeys)[0] || "";
+  const key = d.key || clearKeys[kid] || "";
+
+  const fixedUrl = fixUrl(raw);
+  const isDash = /\.mpd(\?|$)/i.test(fixedUrl);
+  const playable = isDash ? cfMpdToM3u8(fixedUrl) : fixedUrl;
+
+  return {
+    url: playable,
+    signedUrl: "",
+    clearKeys: kid && key ? { [kid]: key } : clearKeys,
+    topic: d.topic || d.video_name || json.topic || "Video",
+    m3u8_url: playable,
+    hls_url: playable,
+    is_live: !!(d.is_live ?? json.is_live),
+    video_container: isDash ? "DASH" : "HLS",
+    drm_protected: !!kid,
+    kid,
+    key,
+    dataFrom: "PrimaryCloudflare",
+  };
+}
+
+// ✅ Fetch from Python Server
 async function fetchFromPythonServer(batchId: string, childId: string, subjectId: string) {
+
   const PYTHON_SERVER = "https://proxy.deltaverse.site/api/prepare";
   
   const response = await fetch(PYTHON_SERVER, {
@@ -196,40 +276,31 @@ export default async function handler(
       });
     }
 
-    // ✅ First try: Python Server
-    try {
-      const videoData = await fetchFromPythonServer(
-        batchId as string,
-        childId as string,
-        subjectId as string
-      );
+    // ✅ Try providers in order: Primary (Cloudflare) → Marco worker → Python
+    const providers: Array<{ name: string; run: () => Promise<any> }> = [
+      {
+        name: "PrimaryCloudflare",
+        run: () => fetchFromPrimary(batchId as string, childId as string),
+      },
+      {
+        name: "MarcoWorker",
+        run: () => fetchFromMarco(batchId as string, childId as string),
+      },
+      {
+        name: "PythonServer",
+        run: () =>
+          fetchFromPythonServer(
+            batchId as string,
+            childId as string,
+            subjectId as string
+          ),
+      },
+    ];
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          url: videoData.url,
-          signedUrl: videoData.signedUrl,
-          clearKeys: videoData.clearKeys,
-          topic: videoData.topic,
-          m3u8_url: videoData.m3u8_url,
-          hls_url: videoData.hls_url,
-          is_live: videoData.is_live,
-          video_container: videoData.video_container,
-          drm_protected: videoData.drm_protected,
-          kid: videoData.kid,
-          key: videoData.key,
-          dataFrom: videoData.dataFrom
-        }
-      });
-    } catch (pythonError) {
-      console.warn("Python server failed, trying Marco...", pythonError);
-      
-      // ✅ Fallback: Marco API
+    let lastError: unknown = null;
+    for (const provider of providers) {
       try {
-        const videoData = await fetchFromMarco(
-          batchId as string,
-          childId as string
-        );
+        const videoData = await provider.run();
 
         return res.status(200).json({
           success: true,
@@ -245,14 +316,22 @@ export default async function handler(
             drm_protected: videoData.drm_protected,
             kid: videoData.kid,
             key: videoData.key,
-            dataFrom: videoData.dataFrom
-          }
+            dataFrom: videoData.dataFrom,
+          },
         });
-      } catch (marcoError) {
-        console.error("Both Python and Marco failed:", marcoError);
-        
+      } catch (err) {
+        lastError = err;
+        console.warn(`${provider.name} failed:`, err);
+      }
+    }
+
+    {
+      {
+        console.error("All stream providers failed:", lastError);
+
         // ✅ Final fallback: Old logic
         const tokensToTry = [...batch.enrolledTokens];
+
 
         // ✅ Guest / auth-OFF: put the global admin token first so guests can
         // always play videos even if the batch has no enrolled user tokens.

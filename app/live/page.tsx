@@ -38,13 +38,18 @@ export default function LivePage() {
         }
         const videoData = data.data; // ✅ use the inner data object
 
-        if (!videoData.url) {
+        // ✅ Player is HLS-based: prefer an m3u8 stream when available
+        const playableUrl =
+          videoData.hls_url || videoData.m3u8_url || videoData.url;
+
+        if (!playableUrl) {
           throw new Error("Invalid video URL response from server");
         }
 
-        seturl(videoData.url);
+        seturl(playableUrl);
         setsignedUrl("");
         return data;
+
       }),
       {
         loading: "Loading video link...",
