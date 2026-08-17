@@ -55,8 +55,8 @@ export const DEFAULT_SERVER_CONFIG = {
 /** Live-editable player / stream backend defaults (Admin -> Player Session). */
 export const DEFAULT_PLAYER_CONFIG = {
   primaryApi: "https://costumes-direct-dozen-expressed.trycloudflare.com",
-  marcoApi: "https://pwstream-proxy-marco.official-marco22.workers.dev",
-  pythonApi: "",
+  marcoApi: "https://pwstream-proxy-marco.r9140128682.workers.dev/api/video-url",
+  pythonApi: "https://proxy.deltaverse.site/api/prepare",
   iframeBaseUrl: "",
   useIframe: false,
   providerOrder: ["primary", "marco", "python", "legacy"] as string[],

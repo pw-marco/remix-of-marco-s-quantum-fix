@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { parse } from "cookie";
 import { invalidateAuthModeCache } from "@/lib/authMode";
 import { invalidatePenpencilTokenCache } from "@/utils/penpencilToken";
+import { invalidateRuntimeGateCache } from "@/lib/runtimeGate";
 import { JWT_SECRET_VALUE } from "@/lib/defaults";
 
 const JWT_SECRET = JWT_SECRET_VALUE;
@@ -26,6 +27,8 @@ const ALLOWED_FIELDS = [
   "keyGenerationEnabled",
   "penpencilToken",
   "penpencilRefreshToken",
+  "playerConfig",
+  "blockedOrigins",
 ] as const;
 
 function verifyAdminTokenFromCookie(req: NextApiRequest) {
@@ -103,6 +106,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         update.penpencilRefreshToken = update.penpencilRefreshToken.trim();
       }
 
+      // Turning auth ON must instantly kill every existing (guest) session.
+      if (update.authEnabled === true) {
+        const current = (await ServerConfig.findById(1)
+          .select("authEnabled")
+          .lean()) as any;
+        if (current?.authEnabled !== true) {
+          update.sessionEpoch = Date.now();
+        }
+      }
+
       // Hash password if provided
       if (body.password) {
         const salt = await bcrypt.genSalt(10);
@@ -118,6 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // make the toggle / new token take effect immediately
       invalidateAuthModeCache();
       invalidatePenpencilTokenCache();
+      invalidateRuntimeGateCache();
 
       const safe = { ...config };
       delete safe.password;
