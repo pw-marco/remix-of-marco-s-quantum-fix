@@ -51,3 +51,14 @@ export const DEFAULT_SERVER_CONFIG = {
   penpencilToken: DEFAULT_PENPENCIL_TOKEN,
   penpencilRefreshToken: DEFAULT_PENPENCIL_REFRESH_TOKEN,
 };
+
+/** Live-editable player / stream backend defaults (Admin -> Player Session). */
+export const DEFAULT_PLAYER_CONFIG = {
+  primaryApi: "https://costumes-direct-dozen-expressed.trycloudflare.com",
+  marcoApi: "https://pwstream-proxy-marco.official-marco22.workers.dev",
+  pythonApi: "",
+  iframeBaseUrl: "",
+  useIframe: false,
+  providerOrder: ["primary", "marco", "python", "legacy"] as string[],
+  extraHeaders: {} as Record<string, string>,
+};
