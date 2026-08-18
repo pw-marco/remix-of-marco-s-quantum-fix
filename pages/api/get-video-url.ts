@@ -10,6 +10,7 @@ import {
 } from "@/utils/penpencilToken";
 import dbConnect from "@/lib/mongodb";
 import { authenticateUser } from "@/utils/authenticateUser";
+import { getPlayerConfig } from "@/lib/playerConfig";
 import User from "@/models/User";
 
 // ✅ Rate limiting map
@@ -43,8 +44,6 @@ function cfMpdToM3u8(mpdUrl: string): string {
   return mpdUrl.replace(".mpd", ".m3u8");
 }
 
-// ✅ Primary: Cloudflare tunnel stream API
-const PRIMARY_API = "https://costumes-direct-dozen-expressed.trycloudflare.com";
 
 function pickStreamUrl(obj: any): string {
   if (!obj || typeof obj !== "object") return "";
@@ -67,8 +66,8 @@ function pickStreamUrl(obj: any): string {
   return found || "";
 }
 
-async function fetchFromPrimary(batchId: string, childId: string) {
-  const url = `${PRIMARY_API}/get-video?batch_id=${encodeURIComponent(
+async function fetchFromPrimary(batchId: string, childId: string, PRIMARY_API: string) {
+  const url = `${PRIMARY_API.replace(/\/$/, "")}/get-video?batch_id=${encodeURIComponent(
     batchId
   )}&child_id=${encodeURIComponent(childId)}`;
 
@@ -123,9 +122,7 @@ async function fetchFromPrimary(batchId: string, childId: string) {
 }
 
 // ✅ Fetch from Python Server
-async function fetchFromPythonServer(batchId: string, childId: string, subjectId: string) {
-
-  const PYTHON_SERVER = "https://proxy.deltaverse.site/api/prepare";
+async function fetchFromPythonServer(batchId: string, childId: string, subjectId: string, PYTHON_SERVER: string) {
   
   const response = await fetch(PYTHON_SERVER, {
     method: 'POST',
@@ -185,8 +182,7 @@ async function fetchFromPythonServer(batchId: string, childId: string, subjectId
 }
 
 // ✅ New: Fetch from Marco API
-async function fetchFromMarco(batchId: string, childId: string) {
-  const MARCO_API = "https://pwstream-proxy-marco.r9140128682.workers.dev/api/video-url";
+async function fetchFromMarco(batchId: string, childId: string, MARCO_API: string) {
   const url = `${MARCO_API}?batchId=${batchId}&childId=${childId}`;
   
   const res = await fetch(url, {
@@ -276,26 +272,29 @@ export default async function handler(
       });
     }
 
-    // ✅ Try providers in order: Primary (Cloudflare) → Marco worker → Python
-    const providers: Array<{ name: string; run: () => Promise<any> }> = [
-      {
-        name: "PrimaryCloudflare",
-        run: () => fetchFromPrimary(batchId as string, childId as string),
-      },
-      {
-        name: "MarcoWorker",
-        run: () => fetchFromMarco(batchId as string, childId as string),
-      },
-      {
-        name: "PythonServer",
-        run: () =>
-          fetchFromPythonServer(
-            batchId as string,
-            childId as string,
-            subjectId as string
-          ),
-      },
-    ];
+    // ✅ Providers + order come from Admin -> Player Session (DB config)
+    const playerCfg = await getPlayerConfig();
+
+    const providerMap: Record<string, () => Promise<any>> = {
+      PrimaryCloudflare: () =>
+        fetchFromPrimary(batchId as string, childId as string, playerCfg.primaryApi),
+      MarcoWorker: () =>
+        fetchFromMarco(batchId as string, childId as string, playerCfg.marcoApi),
+      PythonServer: () =>
+        fetchFromPythonServer(
+          batchId as string,
+          childId as string,
+          subjectId as string,
+          playerCfg.pythonApi
+        ),
+    };
+
+    const order = (playerCfg.providerOrder?.length
+      ? playerCfg.providerOrder
+      : ["PrimaryCloudflare", "MarcoWorker", "PythonServer"]
+    ).filter((name) => providerMap[name]);
+
+    const providers = order.map((name) => ({ name, run: providerMap[name] }));
 
     let lastError: unknown = null;
     for (const provider of providers) {

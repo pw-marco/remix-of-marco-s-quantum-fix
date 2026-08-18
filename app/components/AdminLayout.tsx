@@ -12,7 +12,9 @@ import {
   ChevronDown,
   Menu,
   X,
-  Link
+  Link,
+  PlayCircle,
+  Globe
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +68,10 @@ export default function AdminLayout({ children, activePage = "dashboard" }: Admi
       router.push("/admin/users");
     } else if (page === "batches") {
       router.push("/admin/batches");
+    } else if (page === "player") {
+      router.push("/admin/player");
+    } else if (page === "origins") {
+      router.push("/admin/origins");
     }
     // Add navigation logic for other pages when implemented
   };
@@ -125,6 +131,18 @@ export default function AdminLayout({ children, activePage = "dashboard" }: Admi
             label="Shortner" 
             active={activePage === "shortner"}
             onClick={() => handleNavClick("shortner")}
+          />
+          <NavItem 
+            icon={<PlayCircle className="w-5 h-5" />} 
+            label="Player Session" 
+            active={activePage === "player"}
+            onClick={() => handleNavClick("player")}
+          />
+          <NavItem 
+            icon={<Globe className="w-5 h-5" />} 
+            label="Origins" 
+            active={activePage === "origins"}
+            onClick={() => handleNavClick("origins")}
           />
           <NavItem 
             icon={<Settings className="w-5 h-5" />} 
