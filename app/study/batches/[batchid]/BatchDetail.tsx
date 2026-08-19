@@ -455,6 +455,9 @@ export default function BatchDetailPage() {
             <div className="container mx-auto px-0 py-6">
               {/* Description Content */}
               <div className="lg:col-span-2 space-y-6">
+                {/* Today's Class for this batch */}
+                <TodaysClassSection batchId={batchId} />
+
                 {/* This Batch Includes */}
                 <div className="divshadow bg-background border rounded-lg p-6">
                   <h3 className="text-2xl font-bold text-static-black max-md:text-xl max-sm:text-base mb-2">
