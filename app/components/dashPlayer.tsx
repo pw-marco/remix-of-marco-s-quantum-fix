@@ -272,12 +272,9 @@ useEffect(() => {
         }
       });
 
-      if (drmConfig?.clearKeys) {
+      if (drmConfig?.clearKeys && Object.keys(drmConfig.clearKeys).length) {
         player.configure({
           drm: {
-            servers: {
-              "org.w3.clearkey": "", // ClearKey doesn't need a license server
-            },
             clearKeys: drmConfig.clearKeys,
           },
         });
@@ -336,7 +333,7 @@ useEffect(() => {
           setAvailableQualities(qualities);
         })
         .catch((err) => {
-          console.error("Error loading video:", err);
+          console.error("Error loading video:", err?.code, err?.category, JSON.stringify(err?.data));
         });
     }, 50); // Delay to avoid MediaSource init errors
 
