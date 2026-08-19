@@ -1,74 +1,95 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import HLSPlayer from "@/app/components/HLSPlayer";
+import StreamPlayer from "@/app/components/StreamPlayer";
 import { toast } from "sonner";
 
 export default function LivePage() {
-  const [url, seturl] = useState<string | null>(null);
-  const [signedUrl, setsignedUrl] = useState<string>("");
+  const [url, setUrl] = useState<string>("");
+  const [clearKeys, setClearKeys] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // 👈 track error
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const batchId = params.get("batchId");
     const subjectId = params.get("SubjectId");
     const childId = params.get("ChildId");
+    const urlType = params.get("Type") || "awsVideo";
 
-    if (!batchId || !subjectId || !childId) {
+    if (!batchId || !childId) {
       const err = "Missing required query parameters.";
       toast.error(err);
       setErrorMsg(err);
-
       setLoading(false);
       return;
     }
 
-    const promise = toast.promise(
-      fetch(
-        `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`
-      ).then(async (res) => {
-        // if (!res.ok) throw new Error("Network response was not ok");
-        const data = await res.json();
-        if (!data.success) {
-          throw new Error(
-            data.message || "Failed to fetch video EROR_CODE_902"
-          );
-        }
-        const videoData = data.data; // ✅ use the inner data object
+    let cancelled = false;
 
-        // ✅ Player is HLS-based: prefer an m3u8 stream when available
+    const load = async () => {
+      // 1️⃣ Primary: stream-url worker
+      try {
+        const res = await fetch(
+          `/api/stream-url?parentId=${encodeURIComponent(
+            batchId
+          )}&childId=${encodeURIComponent(childId)}&urlType=${encodeURIComponent(
+            urlType
+          )}`
+        );
+        const json = await res.json();
+
+        if (res.ok && json?.success && json?.data?.videoUrl) {
+          if (cancelled) return;
+          setUrl(json.data.videoUrl);
+          setClearKeys(json.data.clearKeys || {});
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("stream-url failed, falling back", err);
+      }
+
+      // 2️⃣ Fallback: existing provider chain
+      try {
+        const res = await fetch(
+          `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId || ""}&childId=${childId}`
+        );
+        const data = await res.json();
+
+        if (!data?.success) {
+          throw new Error(data?.message || "Failed to fetch video EROR_CODE_902");
+        }
+
+        const videoData = data.data || {};
         const playableUrl =
           videoData.hls_url || videoData.m3u8_url || videoData.url;
 
-        if (!playableUrl) {
-          throw new Error("Invalid video URL response from server");
-        }
+        if (!playableUrl) throw new Error("Invalid video URL response from server");
 
-        seturl(playableUrl);
-        setsignedUrl("");
-        return data;
-
-      }),
-      {
-        loading: "Loading video link...",
-        success: "Video link loaded!",
-        error: (err) => {
-          setErrorMsg(err.message || "Error loading video link");
-          return err.message || "Error loading video link";
-        },
+        if (cancelled) return;
+        setUrl(playableUrl);
+        setClearKeys(videoData.clearKeys || {});
+      } catch (err: any) {
+        if (cancelled) return;
+        const msg = err?.message || "Error loading video link";
+        toast.error(msg);
+        setErrorMsg(msg);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    );
+    };
 
-    // unwrap returns a real Promise so you can use finally()
-    promise.unwrap().finally(() => setLoading(false));
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen text-white">
-        <span>Loading video...</span>
+      <div className="flex justify-center items-center min-h-screen bg-black text-white">
+        <span>Loading live class...</span>
       </div>
     );
   }
@@ -81,6 +102,5 @@ export default function LivePage() {
     );
   }
 
-
-  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} />;
+  return <StreamPlayer url={url} clearKeys={clearKeys} />;
 }
