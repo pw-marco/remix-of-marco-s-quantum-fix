@@ -162,6 +162,10 @@ async function getOrSetAnonId(req: NextRequest, res?: NextResponse) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // The middleware gate-check calls this endpoint internally; running the
+  // full middleware on it would create a recursive self-request.
+  if (pathname === "/api/auth/mode") return NextResponse.next();
+
   // ---- Origin firewall (log + block proxies / mirrors) ----
   const origin = requestOrigin(req);
   const selfHost = req.nextUrl.host.toLowerCase();

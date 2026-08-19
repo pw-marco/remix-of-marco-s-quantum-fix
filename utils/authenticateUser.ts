@@ -99,11 +99,13 @@ export async function authenticateUser(
       user.refreshToken = newRefreshToken;
       await user.save();
 
+      const isProd = process.env.NODE_ENV === "production";
+      const cookieSecurity = isProd ? " SameSite=None; Secure;" : " SameSite=Lax;";
       res.setHeader("Set-Cookie", [
-        `accessToken=${newAccessToken}; Path=/; HttpOnly; SameSite=None; Max-Age=${JWT_ACCESS_EXPIRES_SECONDS}; Secure;`,
-        `refreshToken=${newRefreshToken}; Path=/; HttpOnly; SameSite=None; Max-Age=${
+        `accessToken=${newAccessToken}; Path=/; HttpOnly;${cookieSecurity} Max-Age=${JWT_ACCESS_EXPIRES_SECONDS};`,
+        `refreshToken=${newRefreshToken}; Path=/; HttpOnly;${cookieSecurity} Max-Age=${
           60 * 60 * 24 * JWT_REFRESH_EXPIRES_DAYS
-        }; Secure;`,
+        };`,
       ]);
 
       return user;
@@ -117,9 +119,11 @@ export async function authenticateUser(
 }
 
 function clearAuthCookies(res: NextApiResponse) {
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieSecurity = isProd ? " SameSite=None; Secure;" : " SameSite=Lax;";
   res.setHeader("Set-Cookie", [
-    `accessToken=; Path=/; HttpOnly; SameSite=None; Max-Age=0; Secure`,
-    `refreshToken=; Path=/; HttpOnly; SameSite=None; Max-Age=0; Secure`,
+    `accessToken=; Path=/; HttpOnly;${cookieSecurity} Max-Age=0;`,
+    `refreshToken=; Path=/; HttpOnly;${cookieSecurity} Max-Age=0;`,
   ]);
 }
 export { clearAuthCookies };
