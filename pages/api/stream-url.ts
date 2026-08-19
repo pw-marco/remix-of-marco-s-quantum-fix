@@ -26,7 +26,10 @@ export default async function handler(
 
     const parentId = one(req.query.parentId as any) || one(req.query.batchId as any);
     const childId = one(req.query.childId as any);
-    const urlType = one(req.query.urlType as any) || "penpencilvdo";
+    const rawType = one(req.query.urlType as any) || "penpencilvdo";
+    // worker only supports penpencilvdo; live types (premiumWebrtc/awsVideo) map to it
+    const urlType = rawType === "vimeo" ? rawType : "penpencilvdo";
+
 
     if (!parentId || !childId) {
       return res
