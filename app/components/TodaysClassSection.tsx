@@ -190,10 +190,10 @@ export default function TodaysClassSection({
                   return;
                 }
 
-                // Live window -> same stream-url format as recorded (penpencilvdo)
+                // Live window -> /live page, same stream-url format (penpencilvdo)
                 if (isDuring) {
                   router.push(
-                    `/watch?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                    `/live?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                   );
                   return;
                 }
