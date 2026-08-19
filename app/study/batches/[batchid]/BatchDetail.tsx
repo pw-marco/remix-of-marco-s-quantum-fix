@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { BellDot, MessagesSquare, BookmarkPlus } from "lucide-react";
 import he from "he";
 import BatchCard from "@/app/components/BatchCard";
+import TodaysClassSection from "@/app/components/TodaysClassSection";
+
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 
