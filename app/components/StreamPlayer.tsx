@@ -32,12 +32,15 @@ const StreamPlayer: React.FC<Props> = ({ url, clearKeys, attachment }) => {
   }
 
   const clean = url.split("#")[0];
+  const hasKeys = !!clearKeys && Object.keys(clearKeys).length > 0;
+  // Some providers serve a DASH manifest from a non-.mpd path (e.g. rcx.php)
+  const looksLikeDash = /\.mpd(\?|$)/i.test(clean) || /rcx\.php/i.test(clean) || hasKeys;
 
   if (/\.m3u8(\?|$)/i.test(clean)) {
     return <HLSPlayer baseUrl={url} signedQuery="" attachment={attachment} />;
   }
 
-  if (/\.mpd(\?|$)/i.test(clean)) {
+  if (looksLikeDash) {
     return (
       <DashPlayer
         src={url}
@@ -47,6 +50,7 @@ const StreamPlayer: React.FC<Props> = ({ url, clearKeys, attachment }) => {
       />
     );
   }
+
 
   return (
     <div className="w-full h-screen bg-black">
