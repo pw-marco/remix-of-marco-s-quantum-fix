@@ -272,12 +272,9 @@ useEffect(() => {
         }
       });
 
-      if (drmConfig?.clearKeys) {
+      if (drmConfig?.clearKeys && Object.keys(drmConfig.clearKeys).length) {
         player.configure({
           drm: {
-            servers: {
-              "org.w3.clearkey": "", // ClearKey doesn't need a license server
-            },
             clearKeys: drmConfig.clearKeys,
           },
         });
