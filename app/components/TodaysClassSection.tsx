@@ -190,15 +190,14 @@ export default function TodaysClassSection({
                   return;
                 }
 
-                // Live window -> open as live (live page has a fallback chain)
+                // Live window -> same stream-url format as recorded (penpencilvdo)
                 if (isDuring) {
                   router.push(
-                    `/live?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=${
-                      urlType || "awsVideo"
-                    }`
+                    `/watch?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                   );
                   return;
                 }
+
 
 
                 // Ended or already recorded -> open like a normal recorded class

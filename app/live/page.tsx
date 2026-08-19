@@ -15,7 +15,7 @@ export default function LivePage() {
     const batchId = params.get("batchId");
     const subjectId = params.get("SubjectId");
     const childId = params.get("ChildId");
-    const urlType = params.get("Type") || "awsVideo";
+    const urlType = params.get("Type") || "penpencilvdo";
 
     if (!batchId || !childId) {
       const err = "Missing required query parameters.";
