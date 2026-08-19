@@ -190,13 +190,16 @@ export default function TodaysClassSection({
                   return;
                 }
 
-                // Live window -> open as live
-                if (isDuring && urlType === "awsVideo") {
+                // Live window -> open as live (live page has a fallback chain)
+                if (isDuring) {
                   router.push(
-                    `/live?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=awsVideo`
+                    `/live?batchId=${parentId}&SubjectId=${subject}&ChildId=${childId}&Type=${
+                      urlType || "awsVideo"
+                    }`
                   );
                   return;
                 }
+
 
                 // Ended or already recorded -> open like a normal recorded class
                 if (isAfter || urlType === "penpencilvdo" || urlType === "vimeo") {
