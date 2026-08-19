@@ -336,7 +336,7 @@ useEffect(() => {
           setAvailableQualities(qualities);
         })
         .catch((err) => {
-          console.error("Error loading video:", err);
+          console.error("Error loading video:", err?.code, err?.category, JSON.stringify(err?.data));
         });
     }, 50); // Delay to avoid MediaSource init errors
 
