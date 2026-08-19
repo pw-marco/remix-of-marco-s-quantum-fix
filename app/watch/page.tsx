@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import WatchClient from "./WatchClient";
 
 interface PageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function WatchPage({ searchParams }: PageProps) {

@@ -4,11 +4,11 @@ import { cookies } from "next/headers";
 import BatchDetailPage from "./BatchDetail";
 
 interface PageProps {
-  params: { batchid: string };
+  params: Promise<{ batchid: string }>;
 }
 
 export default async function Page({ params }: PageProps) {
-  const batchId = params.batchid;
+  const batchId = (await params).batchid;
 
   // Check if user is authenticated
   const cookieStore = await cookies();
