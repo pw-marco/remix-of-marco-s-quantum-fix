@@ -5,96 +5,66 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import "../globals.css";
 import { toast } from "sonner";
-
-interface ScheduleData {
-  _id: string;
-  topic: string;
-  videoDetails: {
-    _id: string;
-    id: string;
-    name: string;
-  };
-}
+import StreamPlayer from "@/app/components/StreamPlayer";
 
 export default function WatchClient() {
   const params = useSearchParams();
 
   const [loading, setLoading] = useState(true);
-  const [iframeUrl, setIframeUrl] = useState("");
+  const [streamUrl, setStreamUrl] = useState("");
+  const [clearKeys, setClearKeys] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   // Params
   const batchId = params?.get("batchId") || "";
-  const subjectId = params?.get("SubjectId") || "";
   const childId = params?.get("ContentId") || params?.get("ChildId") || "";
-  const videoId = params?.get("videoId") || "";
+  const urlType = params?.get("Type") || "penpencilvdo";
 
   useEffect(() => {
-    if (!batchId || !subjectId || !childId) {
+    if (!batchId || !childId) {
       setLoading(false);
       setError("Missing required parameters");
       return;
     }
 
-    async function buildVideoUrl() {
+    let cancelled = false;
+
+    async function loadStream() {
       try {
         setLoading(true);
 
-        // ✅ Fetch Schedule API
-        const scheduleRes = await fetch(
-          `/api/Schedule?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${childId}`
+        const res = await fetch(
+          `/api/stream-url?parentId=${encodeURIComponent(
+            batchId
+          )}&childId=${encodeURIComponent(childId)}&urlType=${encodeURIComponent(
+            urlType
+          )}`
         );
 
-        if (!scheduleRes.ok) {
-          throw new Error("Failed to fetch schedule");
+        const json = await res.json();
+
+        if (!res.ok || !json?.success || !json?.data?.videoUrl) {
+          throw new Error(json?.message || "Failed to fetch stream url");
         }
 
-        const scheduleData = await scheduleRes.json();
-        const video: ScheduleData = scheduleData.data;
-
-        if (!video) {
-          throw new Error("Video data not found in schedule");
-        }
-
-        // ✅ Build VidStream URL
-        const params = new URLSearchParams();
-
-        params.set('batch_id', batchId || '');
-        params.set('subject_id', subjectId || '');
-        
-        const topicId = video?.videoDetails?.id || childId || '';
-        params.set('topic_id', topicId);
-        
-        params.set('video_id', childId || videoId || '');
-        
-        const typeId = video?.videoDetails?._id || '';
-        params.set('typeId', typeId);
-        
-        params.set('video_url', '');
-        
-        const videoName = video?.topic || 'Video';
-        params.set('video_name', videoName);
-        
-        params.set('video_type', 'new');
-        params.set('play_type', 'Lecture');
-
-        const url = `https://vid-stream-marco.vercel.app/play.php?${params.toString()}`;
-
-        // ✅ YAHAN MISSING THA - SET IFRAME URL
-        console.log("🎬 Iframe URL:", url);
-        setIframeUrl(url);
-
+        if (cancelled) return;
+        setStreamUrl(json.data.videoUrl);
+        setClearKeys(json.data.clearKeys || {});
       } catch (err: any) {
-        console.error("❌ Error:", err);
-        setError(err.message || "Failed to load video");
-        toast.error(err.message || "Failed to load video");
+        if (cancelled) return;
+        console.error("❌ Stream error:", err);
+        setError(err?.message || "Failed to load video");
+        toast.error(err?.message || "Failed to load video");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    buildVideoUrl();
-  }, [batchId, subjectId, childId, videoId]);
+    loadStream();
+    return () => {
+      cancelled = true;
+    };
+  }, [batchId, childId, urlType]);
 
   // ✅ Auto-rotate to landscape
   useEffect(() => {
@@ -103,7 +73,11 @@ export default function WatchClient() {
     const handleFullscreenChange = () => {
       const isFullscreen = !!document.fullscreenElement;
 
-      if (isFullscreen && (screen.orientation && typeof (screen.orientation as any).lock === "function")) {
+      if (
+        isFullscreen &&
+        screen.orientation &&
+        typeof (screen.orientation as any).lock === "function"
+      ) {
         (screen.orientation as any).lock("landscape").catch((err: unknown) => {
           console.warn("Orientation lock failed:", err);
         });
@@ -147,21 +121,5 @@ export default function WatchClient() {
     );
   }
 
-  return (
-    <div className="w-full h-screen bg-black">
-      {iframeUrl ? (
-        <iframe
-          src={iframeUrl}
-          className="w-full h-full border-0"
-          allow="autoplay; encrypted-media; fullscreen"
-          allowFullScreen
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full text-white">
-          <p>No video URL available</p>
-        </div>
-      )}
-    </div>
-  );
+  return <StreamPlayer url={streamUrl} clearKeys={clearKeys} />;
 }
