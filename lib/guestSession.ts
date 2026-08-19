@@ -26,12 +26,13 @@ function randomId() {
 }
 
 export function buildAuthCookies(accessToken: string, refreshToken: string): GuestCookiePair {
-  const secure = process.env.NODE_ENV === "production" ? " Secure;" : "";
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieSecurity = isProd ? " SameSite=None; Secure;" : " SameSite=Lax;";
   return [
-    `accessToken=${accessToken}; Path=/; HttpOnly; SameSite=None; Max-Age=${ACCESS_EXPIRES_SECONDS};${secure}`,
-    `refreshToken=${refreshToken}; Path=/; HttpOnly; SameSite=None; Max-Age=${
+    `accessToken=${accessToken}; Path=/; HttpOnly;${cookieSecurity} Max-Age=${ACCESS_EXPIRES_SECONDS};`,
+    `refreshToken=${refreshToken}; Path=/; HttpOnly;${cookieSecurity} Max-Age=${
       60 * 60 * 24 * REFRESH_EXPIRES_DAYS
-    };${secure}`,
+    };`,
   ];
 }
 

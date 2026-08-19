@@ -28,9 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await authenticateUser(req, res);
 
     // Clear cookies by setting empty values and expired dates
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieSecurity = isProd ? " SameSite=None; Secure;" : " SameSite=Lax;";
     res.setHeader("Set-Cookie", [
-      `accessToken=; Path=/; HttpOnly; Max-Age=0; SameSite=None; Secure;`,
-      `refreshToken=; Path=/; HttpOnly; Max-Age=0; SameSite=None; Secure;`,
+      `accessToken=; Path=/; HttpOnly; Max-Age=0;${cookieSecurity}`,
+      `refreshToken=; Path=/; HttpOnly; Max-Age=0;${cookieSecurity}`,
     ]);
 
     return res.status(200).json({ message: "Logged out successfully", redirect: "/auth" });
